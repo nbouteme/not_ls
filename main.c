@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/09 15:36:19 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/09 15:39:05 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,70 +179,6 @@ void sort_string_arr(char **a, int n, int (*op)(char *, char *))
 			if(op(a[i], a[j]) < 0)
 				swap_cptr(&a[i], &a[j]);
 	}
-}
-
-t_list *copy_elem(t_list *l)
-{
-	return ft_lstnew(l->content, l->content_size);
-}
-
-void ft_lstsplit(t_list *head, t_list **a, t_list **b)
-{
-	int i;
-	t_list *l;
-	t_list *p;
-
-	i = 0;
-	*a = ft_lstmap(head, &copy_elem);
-	l = *a;
-	*b = l;
-	p = l;
-	while(l)
-	{
-		if(i % 2)
-		{
-			p = *b;
-			*b = (*b)->next;
-		}
-		l = l->next;
-		++i;
-	}
-	p->next = 0;
-}
-
-t_list *lst_merge(t_list *a, t_list *b, int (*cmp)(const t_list *, const t_list *))
-{
-	t_list *l;
-	t_list **ll;
-
-	ll = &l;
-	l = 0;
-	if (!b)
-		return a;
-	while(a)
-	{
-		if(cmp(a, b) > 0)
-			swap_cptr((char**)&a, (char **)&b);
-		*ll = a;
-		ll = &a->next;
-		a = *ll;
-	}
-
-	*ll = b;
-	return l;
-}
-
-void ft_lstsort(t_list **head, int (*cmp)(const t_list *, const t_list *))
-{
-	t_list *a;
-	t_list *b;
-
-	if(!*head || !(*head)->next)
-		return ;
-	ft_lstsplit(*head, &a, &b);
-	ft_lstsort(&a, cmp);
-	ft_lstsort(&b, cmp);
-	*head = lst_merge(a, b, cmp);
 }
 
 int alpha_sort(const t_list *a, const t_list *b)
