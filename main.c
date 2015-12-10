@@ -15,6 +15,10 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <pwd.h>
+#include <time.h>
+#include <unistd.h>
+#include <grp.h>
 
 typedef struct	s_options
 {
@@ -26,6 +30,15 @@ typedef struct	s_options
 	int reverse : 1;
 	int time_sort : 1;
 }				t_options; // remplacer bitfields par pointeur structure d'arguments
+
+void swap_cptr(char **a, char **b)
+{
+	char *t;
+
+	t = *a;
+	*a = *b;
+	*b = t;
+}
 
 typedef struct	s_fileinfo
 {
@@ -62,11 +75,11 @@ void add_file(t_options *opts, char *name)
 	t_list *l;
 
 	if(!opts->files)
-		return (void) (opts->files = ft_lstnew(name, ft_strlen(name)));
+		return (void) (opts->files = ft_lstnew(name, ft_strlen(name) + 1));
 	l = opts->files;
 	while (l->next)
 		l = l->next;
-	l->next = ft_lstnew(name, ft_strlen(name));
+	l->next = ft_lstnew(name, ft_strlen(name) + 1);
 }
 
 t_options *get_opts(int argc, char **argv)
@@ -95,10 +108,10 @@ t_list *read_file_info(t_list *file, void *sender)
 {
 	t_options *opts;
 	t_fileinfo *fi;
-
+	
 	opts = sender;
 	fi = malloc(sizeof(*fi));
-	fi->name = file->content;
+	fi->name = ft_strdup(file->content);
 	fi->real_info = 0;
 	fi->e = lstat(fi->name, &fi->info);
 	if(!fi->e)
@@ -112,7 +125,7 @@ t_list *read_file_info(t_list *file, void *sender)
 	}
 	else
 		fi->e = errno;
-	return ft_lstnew(fi, sizeof(*fi));
+	return ft_lstnewown(fi, sizeof(*fi));
 }
 
 size_t block_count(t_fileinfo *file)
@@ -147,23 +160,182 @@ size_t get_total_blocks(t_list *file_list)
 	return n;
 }
 
-void disp(t_list *list, t_options *opts)
-{
-	size_t block_total;
+int alpha_filecmp(t_fileinfo *a, t_fileinfo *b);
 
-	block_total = 0;
-	if(opts->long_format)
-		block_total = get_total_blocks(list);
-	printf("Total block %zu\n", block_total);
+int type_diff(t_fileinfo *a, t_fileinfo *b)
+{
+	if((a->info.st_mode & S_IFMT) == S_IFDIR ||
+	   (b->info.st_mode & S_IFMT) == S_IFDIR)
+		return 1 - (((a->info.st_mode & S_IFMT) != S_IFDIR) * 2);
+	return alpha_filecmp(a, b);
 }
 
-void swap_cptr(char **a, char **b)
+int time_diff(t_fileinfo *a, t_fileinfo *b)
 {
-	char *t;
+	return b->info.st_mtime - a->info.st_mtime;
+}
 
-	t = *a;
-	*a = *b;
-	*b = t;
+int alpha_filecmp(t_fileinfo *a, t_fileinfo *b)
+{
+	return ft_strcmp(a->name, b->name);
+}
+
+int cmp_args(t_list *arg1, t_list *arg2, t_options *opts)
+{
+	t_fileinfo *a = arg1->content;
+	t_fileinfo *b = arg2->content;
+	int diff;
+
+	if((a->info.st_mode & S_IFMT) != (b->info.st_mode & S_IFMT))
+	{
+		diff = type_diff(a, b);
+		if(!diff)
+			diff = alpha_filecmp(a, b);
+		return opts->reverse ? -diff : diff;
+	}
+	if(opts->time_sort)
+		diff = time_diff(a, b);
+	else
+		diff = alpha_filecmp(a, b);
+	return opts->reverse ? -diff : diff;
+}
+
+typedef void(*t_renderf)(t_fileinfo *elem, t_options *opts);
+
+void render_dir(t_fileinfo *elem, t_options *opts)
+{
+	(void)elem;
+	(void)opts;
+}
+
+void render_char(t_fileinfo *elem, t_options *opts)
+{
+	(void)elem;
+	(void)opts;
+}
+
+void render_sock(t_fileinfo *elem, t_options *opts)
+{
+	(void)elem;
+	(void)opts;
+}
+
+void render_sym(t_fileinfo *elem, t_options *opts)
+{
+	(void)elem;
+	(void)opts;
+}
+
+void render_fifo(t_fileinfo *elem, t_options *opts)
+{
+	(void)elem;
+	(void)opts;
+}
+
+void print_mode_str(mode_t mode)
+{
+	const char *file_type = "-pc-d-b---l-s";
+	int i;
+	int s;
+	int n;
+
+	ft_putchar(file_type[(mode & S_IFMT) >> 12]);
+	s = mode & 01000;
+	mode &= 0777;
+	i = 3;
+	while (i--)
+	{
+		n = (mode & (07 << (3 * i))) >> (3 * i);
+		ft_putchar(n & 4 ? 'r' : '-');
+		ft_putchar(n & 2 ? 'w' : '-');
+		if(i == 0 && s)
+			ft_putchar(n & 1 ? 't' : 'T');
+		else
+			ft_putchar(n & 1 ? 'x' : '-');
+	}
+}
+
+const char *user_from_id(uid_t uid)
+{
+	struct passwd *p;
+
+	p = getpwuid(uid);
+	return p->pw_name;
+}
+
+const char *group_from_id(gid_t gid)
+{
+	struct group *g;
+
+	g = getgrgid(gid);
+	return g->gr_name;
+}
+
+void print_fn(t_fileinfo *elem, t_options *opts)
+{
+	// couleurs ici
+	ft_putstr(elem->name);
+	// couleurs ici
+	if(opts->long_format)
+		putchar(10);
+	else
+		putchar('\t');
+}
+
+void print_long(t_fileinfo *elem, t_options *opts)
+{
+	(void)opts;
+	print_mode_str(elem->info.st_mode);
+	ft_putchar(32);
+	ft_putnbr(elem->info.st_nlink);
+	ft_putchar(32);
+	ft_putstr(user_from_id(elem->info.st_uid));
+	ft_putchar(32);
+	ft_putstr(group_from_id(elem->info.st_gid));
+	ft_putchar(32);
+	ft_putnbr(elem->info.st_size);
+	ft_putchar(32);
+	char *s = ctime(&elem->info.st_mtim.tv_sec);
+	write(1, s, ft_strlen(s) - 1);
+	ft_putchar(32);
+	print_fn(elem, opts);
+}
+
+void render_reg(t_fileinfo *elem, t_options *opts)
+{
+	if(opts->long_format)
+		print_long(elem, opts);
+	else
+		ft_putstr(elem->name);
+}
+
+void render_blk(t_fileinfo *elem, t_options *opts)
+{
+	(void)elem;
+	(void)opts;
+}
+
+void error_handle(t_fileinfo *elem, t_options *opts)
+{
+	(void)opts;
+	printf("ls: %s: %s\n", elem->name, strerror(elem->e));
+}
+
+void render_list(t_list *elem, t_options *opts)
+{
+	t_fileinfo *obj;
+	const t_renderf rndr_type[] = { &error_handle, &render_fifo,
+									&render_char, 0, &render_dir,
+									0, &render_blk, 0, &render_reg, 0,
+									&render_sym, 0, &render_sock };	
+	obj = elem->content;
+	rndr_type[(obj->info.st_mode & S_IFMT) >> 12](obj, opts);
+}
+
+void disp(t_list *list, t_options *opts)
+{
+	ft_lstsortup(&list, (void*)&cmp_args, opts);
+	ft_lstiterup(list, (void *)&render_list, opts);
 }
 
 void sort_string_arr(char **a, int n, int (*op)(char *, char *))
@@ -181,29 +353,38 @@ void sort_string_arr(char **a, int n, int (*op)(char *, char *))
 	}
 }
 
-int alpha_sort(const t_list *a, const t_list *b)
+void delete_content(void *content, size_t size)
 {
-	return ft_strcmp(a->content, b->content);
+	(void)size;
+	if (content)
+		free(content);
 }
 
-void print_lst(t_list *a)
+void delete_fileinfo(void *content, size_t size)
 {
-	puts(a->content);
+	t_fileinfo *s;
+
+	(void)size;
+	if (!content)
+		return ;
+	s = content;
+	if(s->name)
+		free(s->name);
+	if(s->real_info)
+		free(s->real_info);
+	free(s);
 }
 
-int main(/*int argc, char **argv*/)
+int main(int argc, char **argv)
 {
-/*	t_options *opts = get_opts(argc, argv);
+	t_options *opts = get_opts(argc, argv);
 	if (!opts->files)
 		add_file(opts, ".");
 	t_list *list = ft_lstmapup(opts->files, &read_file_info, opts);
-	disp(list, opts);*/
-	t_list *a = ft_lstnew("a", 2);
-	ft_lstpush(&a, ft_lstnew("t", 2));
-	ft_lstpush(&a, ft_lstnew("2", 2));
-	ft_lstpush(&a, ft_lstnew("d", 2));
-	ft_lstpush(&a, ft_lstnew("3", 2));
-
-	ft_lstsort(&a, &alpha_sort);
-	ft_lstiter(a, &print_lst);
+	disp(list, opts);
+	if(list)
+		ft_lstdel(&list, &delete_fileinfo);
+	if(opts->files)
+		ft_lstdel(&opts->files, &delete_content);
+	free(opts);
 }
