@@ -23,13 +23,16 @@
 typedef struct	s_options
 {
 	t_list *files;
-	size_t dir_count;
+	size_t argc;
 	int long_format : 1;
 	int recursive : 1;
 	int hidden : 1;
 	int reverse : 1;
 	int time_sort : 1;
 }				t_options; // remplacer bitfields par pointeur structure d'arguments
+
+void delete_content(void *content, size_t size);
+
 
 void swap_cptr(char **a, char **b)
 {
@@ -99,7 +102,10 @@ t_options *get_opts(int argc, char **argv)
 		if (flag_parse)
 			parse_flag(ret, argv[i] + 1, &flag_parse);
 		else
+		{
 			add_file(ret, argv[i]);
+			ret->argc++;
+		}
 	}
 	return ret;
 }
@@ -109,28 +115,25 @@ t_list *read_file_info(t_list *file, void *sender)
 	t_options *opts;
 	t_fileinfo *fi;
 	
-	opts = sender;
+	opts = sender;// why did i need that ?
+	(void)opts;
 	fi = malloc(sizeof(*fi));
 	fi->name = ft_strdup(file->content);
 	fi->real_info = 0;
 	fi->e = lstat(fi->name, &fi->info);
-	if(!fi->e)
-	{
-		if ((fi->info.st_mode & S_IFMT) == S_IFLNK)
-		{
-			fi->real_info = malloc(sizeof(struct stat));
-			stat(fi->name, fi->real_info);
-		}
-		opts->dir_count += (fi->info.st_mode & S_IFMT) == S_IFDIR;
-	}
-	else
+	if(fi->e)
 		fi->e = errno;
+	else if ((fi->info.st_mode & S_IFMT) == S_IFLNK)
+	{
+		fi->real_info = malloc(sizeof(struct stat));
+		stat(fi->name, fi->real_info);
+	}
 	return ft_lstnewown(fi, sizeof(*fi));
 }
 
 size_t block_count(t_fileinfo *file)
 {
-	return file->info.st_blocks;
+	return (file->info.st_blocks << 11) / file->info.st_blksize;
 }
 
 void sum_block_size(t_list *acc, const t_list *op)
@@ -157,6 +160,7 @@ size_t get_total_blocks(t_list *file_list)
 	init = (t_list){ &n, 4, 0 };
 	ret = ft_lstreduce(file_list, &init, &sum_block_size);
 	n = *(int*)ret->content;
+	ft_lstdelone(&ret, &delete_content);
 	return n;
 }
 
@@ -177,7 +181,12 @@ int time_diff(t_fileinfo *a, t_fileinfo *b)
 
 int alpha_filecmp(t_fileinfo *a, t_fileinfo *b)
 {
-	return ft_strcmp(a->name, b->name);
+	char *x;
+	char *y;
+
+	x = ft_strmapw(a->name, &ft_tolower);
+	y = ft_strmapw(b->name, &ft_tolower);
+	return ft_strcmp(x, y);
 }
 
 int cmp_args(t_list *arg1, t_list *arg2, t_options *opts)
@@ -200,13 +209,20 @@ int cmp_args(t_list *arg1, t_list *arg2, t_options *opts)
 	return opts->reverse ? -diff : diff;
 }
 
-typedef void(*t_renderf)(t_fileinfo *elem, t_options *opts);
-
-void render_dir(t_fileinfo *elem, t_options *opts)
+int filecmp(const t_list *arg1, const t_list *arg2, t_options *opts)
 {
-	(void)elem;
-	(void)opts;
+	t_fileinfo *a = arg1->content;
+	t_fileinfo *b = arg2->content;
+	int diff;
+
+	if(opts->time_sort)
+		diff = time_diff(a, b);
+	else
+		diff = alpha_filecmp(a, b);
+	return opts->reverse ? -diff : diff;
 }
+
+typedef void(*t_renderf)(t_fileinfo *elem, t_options *opts);
 
 void render_char(t_fileinfo *elem, t_options *opts)
 {
@@ -301,12 +317,93 @@ void print_long(t_fileinfo *elem, t_options *opts)
 	print_fn(elem, opts);
 }
 
-void render_reg(t_fileinfo *elem, t_options *opts)
+#include <dirent.h>
+
+t_list *list_content(char *name)
+{
+	DIR *dir;
+	struct dirent *r;
+	t_list *ret;
+
+	ret = 0;
+	dir = opendir(name);
+	while((r = readdir(dir)))
+		ft_lstadd(&ret, ft_lstnew(r->d_name, ft_strlen(r->d_name)));
+	return ret;
+}
+
+int keep_things(t_list *elem, t_options *opts);
+
+t_list *get_content(char *name, t_options *opts)
+{
+	(void)opts;
+	t_list *content;
+	t_list *ret;
+	t_list *tmp;
+
+	content = list_content(name);
+
+	tmp = ft_lstfilterup(content, (void*)&keep_things, opts);
+	ret = ft_lstmapup(tmp, &read_file_info, opts);
+	ft_lstdel(&content, &delete_content);
+	ft_lstsortup(&ret, (void*)&filecmp, opts);
+	return ret;
+}
+
+void print_gen_file(t_fileinfo *elem, t_options *opts);
+
+void print_list_help(t_list *elem, t_options *opts)
+{
+	if(!elem)
+		return ;
+	print_gen_file(elem->content, opts);
+}
+
+void print_list(t_list *elem)
+{
+	puts(((t_fileinfo *)elem->content)->name);
+}
+
+int keep_things(t_list *elem, t_options *opts)
+{
+	char *name;
+
+	name = elem->content;
+	return (name[0] != '.' || opts->hidden);
+}
+
+void render_dir(t_fileinfo *elem, t_options *opts)
+{
+	t_list *dir_content;
+
+	if(opts->argc > 1 || opts->recursive)
+	{
+		ft_putstr(elem->name);
+		ft_putchar(':');
+	}
+	dir_content = get_content(elem->name, opts);
+	if(opts->long_format)
+	{
+		ft_putstr("total ");
+		ft_putnbr(get_total_blocks(dir_content));
+		ft_putchar(10);
+	}
+	//ft_lstiter(dir_content, (void*)&print_list);
+	if(dir_content)
+		ft_lstiterup(dir_content, (void*)&print_list_help, opts);
+}
+
+void print_gen_file(t_fileinfo *elem, t_options *opts)
 {
 	if(opts->long_format)
 		print_long(elem, opts);
 	else
-		ft_putstr(elem->name);
+		ft_putendl(elem->name);
+}
+
+void render_reg(t_fileinfo *elem, t_options *opts)
+{
+	print_gen_file(elem, opts);
 }
 
 void render_blk(t_fileinfo *elem, t_options *opts)
