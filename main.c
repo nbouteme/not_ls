@@ -31,8 +31,14 @@ typedef struct	s_options
 	int time_sort : 1;
 }				t_options; // remplacer bitfields par pointeur structure d'arguments
 
-void delete_content(void *content, size_t size);
+typedef struct	s_render
+{
+	char	*name;
+	char	*value;
+	int		width;
+}				t_render;
 
+void delete_content(void *content, size_t size);
 
 void swap_cptr(char **a, char **b)
 {
@@ -176,7 +182,12 @@ int type_diff(t_fileinfo *a, t_fileinfo *b)
 
 int time_diff(t_fileinfo *a, t_fileinfo *b)
 {
-	return b->info.st_mtime - a->info.st_mtime;
+	size_t diff;
+
+	diff = b->info.st_mtim.tv_sec - a->info.st_mtim.tv_sec;
+	if(!diff)
+		diff = b->info.st_mtim.tv_nsec - a->info.st_mtim.tv_nsec;
+	return diff;
 }
 
 int alpha_filecmp(t_fileinfo *a, t_fileinfo *b)
@@ -184,9 +195,18 @@ int alpha_filecmp(t_fileinfo *a, t_fileinfo *b)
 	char *x;
 	char *y;
 
-	x = ft_strmapw(a->name, &ft_tolower);
-	y = ft_strmapw(b->name, &ft_tolower);
-	return ft_strcmp(x, y);
+	x = a->name;
+	if(ft_strcmp(x, ".") == 0)
+		return -1;
+	y = b->name;
+	if(ft_strcmp(y, ".") == 0)
+		return 1;
+	while(*x && *y && ft_tolower(*x) == ft_tolower(*y))
+	{
+		++x;
+		++y;
+	}
+	return ft_tolower(*x) - ft_tolower(*y);
 }
 
 int cmp_args(t_list *arg1, t_list *arg2, t_options *opts)
