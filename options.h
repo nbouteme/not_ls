@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   options.h                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,39 +10,38 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#ifndef OPTIONS_H
+# define OPTIONS_H
+
 #include <libft.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include <unistd.h>
+#include <sys/stat.h>
 
-#include "options.h"
-#include "callback.h"
-#include "memutils.h"
-
-size_t block_count(t_fileinfo *file)
+typedef struct	s_options
 {
-	return (file->info.st_blocks << 11) / file->info.st_blksize;
-}
+	t_list *files;
+	size_t argc;
+	int long_format : 1;
+	int recursive : 1;
+	int hidden : 1;
+	int reverse : 1;
+	int time_sort : 1;
+}				t_options; // remplacer bitfields par pointeur structure d'arguments
 
-void sum_block_size(t_list *acc, const t_list *op)
+
+typedef struct	s_fileinfo
 {
-	int *n;
+	struct stat info;
+	int			e;
+	char		*name;
+	struct stat *real_info;
+}				t_fileinfo;
 
-	n = acc->content;
-	*n += block_count(op->content);
-}
+t_list *read_file_info(t_list *file, void *sender);
+t_options *get_opts(int argc, char **argv);
+void add_file(t_options *opts, char *name);
+void parse_flag(t_options *opts, char *opt, int *stop);
 
-int main(int argc, char **argv)
-{
-	t_options *opts = get_opts(argc, argv);
-	if (!opts->files)
-		add_file(opts, ".");
-	t_list *list = ft_lstmapup(opts->files, &read_file_info, opts);
-	disp(list, opts);
-	if(list)
-		ft_lstdel(&list, &delete_fileinfo);
-	if(opts->files)
-		ft_lstdel(&opts->files, &delete_content);
-	free(opts);
-}
+#endif

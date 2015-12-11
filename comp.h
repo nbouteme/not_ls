@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   comp.h                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,39 +10,15 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <libft.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
+#ifndef COMP_H
+# define COMP_H
 
-#include "options.h"
-#include "callback.h"
-#include "memutils.h"
+# include "options.h"
 
-size_t block_count(t_fileinfo *file)
-{
-	return (file->info.st_blocks << 11) / file->info.st_blksize;
-}
+int type_diff(t_fileinfo *a, t_fileinfo *b);
+int time_diff(t_fileinfo *a, t_fileinfo *b);
+int alpha_filecmp(t_fileinfo *a, t_fileinfo *b);
+int cmp_args(t_list *arg1, t_list *arg2, t_options *opts);
+int filecmp(const t_list *arg1, const t_list *arg2, t_options *opts);
 
-void sum_block_size(t_list *acc, const t_list *op)
-{
-	int *n;
-
-	n = acc->content;
-	*n += block_count(op->content);
-}
-
-int main(int argc, char **argv)
-{
-	t_options *opts = get_opts(argc, argv);
-	if (!opts->files)
-		add_file(opts, ".");
-	t_list *list = ft_lstmapup(opts->files, &read_file_info, opts);
-	disp(list, opts);
-	if(list)
-		ft_lstdel(&list, &delete_fileinfo);
-	if(opts->files)
-		ft_lstdel(&opts->files, &delete_content);
-	free(opts);
-}
+#endif

@@ -21,11 +21,17 @@ LIBDIR = libft
 LIBS = libft.a
 LINK = ft
 
-SRC = main.c		   \
+SRC = 	main.c		\
+		comp.c		\
+		render.c	\
+		options.c	\
+		callback.c	\
+		memutils.c	\
+		sys_utils.c	\
 
 OBJ = $(SRC:.c=.o)
 
-CC = gcc
+CC = clang
 OPT=-g
 CFLAGS = -Wall -Wextra -Werror $(OPT)
 
