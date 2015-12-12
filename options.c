@@ -6,11 +6,12 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/09 15:39:05 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/12 17:31:53 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "options.h"
+# include "sys_utils.h"
 
 void parse_flag(t_options *opts, char *opt, int *stop)
 {
@@ -75,19 +76,22 @@ t_list *read_file_info(t_list *file, void *sender)
 {
 	t_options *opts;
 	t_fileinfo *fi;
-	
+	char *t;
+
 	opts = sender;// why did i need that ?
 	(void)opts;
 	fi = malloc(sizeof(*fi));
 	fi->name = ft_strdup(file->content);
 	fi->real_info = 0;
-	fi->e = lstat(fi->name, &fi->info);
+	t = ft_strjoin(set_cwdir(0), fi->name);
+	fi->e = lstat(t, &fi->info);
 	if(fi->e)
 		fi->e = errno;
 	else if ((fi->info.st_mode & S_IFMT) == S_IFLNK)
 	{
 		fi->real_info = malloc(sizeof(struct stat));
-		stat(fi->name, fi->real_info);
+		stat(t, fi->real_info);
 	}
+	free(t);
 	return ft_lstnewown(fi, sizeof(*fi));
 }

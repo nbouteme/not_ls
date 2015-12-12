@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/09 15:39:05 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/12 17:15:43 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 
 size_t block_count(t_fileinfo *file)
 {
-	return (file->info.st_blocks << 11) / file->info.st_blksize;
+	return file->info.st_blocks;
 }
 
 void sum_block_size(t_list *acc, const t_list *op)

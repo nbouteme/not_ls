@@ -6,18 +6,18 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/12 11:24:09 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/12 17:31:48 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef OPTIONS_H
 # define OPTIONS_H
 
-#include <libft.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <sys/stat.h>
+# include <libft.h>
+# include <stdlib.h>
+# include <stdio.h>
+# include <errno.h>
+# include <sys/stat.h>
 
 # ifdef __APPLE__
 #  define st_mtim st_mtimespec
@@ -34,13 +34,13 @@ typedef struct	s_options
 	int time_sort : 1;
 }				t_options; // remplacer bitfields par pointeur structure d'arguments
 
-
 typedef struct	s_fileinfo
 {
-	struct stat info;
-	int			e;
+	t_list		*fields;
 	char		*name;
 	struct stat *real_info;
+	int			e;
+	struct stat info;
 }				t_fileinfo;
 
 t_list *read_file_info(t_list *file, void *sender);

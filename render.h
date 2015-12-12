@@ -9,7 +9,7 @@
 #include "comp.h"
 
 typedef void(*t_renderf)(t_fileinfo *elem, t_options *opts);
-void print_mode_str(mode_t mode);
+void print_mode_str(t_fileinfo *fi);
 void print_fn(t_fileinfo *elem, t_options *opts);
 void render_dir(t_fileinfo *elem, t_options *opts);
 void render_list(t_list *elem, t_options *opts);

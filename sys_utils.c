@@ -39,9 +39,14 @@ t_list *get_content(char *name, t_options *opts)
 	content = list_content(name);
 
 	tmp = ft_lstfilterup(content, (void*)&keep_things, opts);
-	ret = ft_lstmapup(tmp, &read_file_info, opts);
-	ft_lstdel(&content, &delete_content);
-	ft_lstsortup(&ret, (void*)&filecmp, opts);
+	if (tmp)
+	{
+		ret = ft_lstmapup(tmp, &read_file_info, opts);
+		ft_lstdel(&content, &delete_content);
+		ft_lstsortup(&ret, (void*)&filecmp, opts);
+	}
+	else
+		ret = 0;
 	return ret;
 }
 
@@ -57,4 +62,18 @@ size_t get_total_blocks(t_list *file_list)
 	n = *(int*)ret->content;
 	ft_lstdelone(&ret, &delete_content);
 	return n;
+}
+
+
+char *set_cwdir(const char *n)
+{
+	static char *cwd = 0;
+	if (!cwd)
+		cwd = ft_strdup("./");
+	if (n)
+	{
+		free(cwd);
+		cwd = ft_strjoin(ft_strdup(n), n[ft_strlen(n) - 1] == '/' ? "" : "/");
+	}
+	return cwd;
 }

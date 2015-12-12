@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/12 11:23:49 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/12 12:34:09 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,9 @@ int type_diff(t_fileinfo *a, t_fileinfo *b)
 int time_diff(t_fileinfo *a, t_fileinfo *b)
 {
 	size_t diff;
+#ifdef __APPLE__
+# define st_mtim st_mtimespec
+#endif
 	diff = b->info.st_mtim.tv_sec - a->info.st_mtim.tv_sec;
 	if(!diff)
 		diff = b->info.st_mtim.tv_nsec - a->info.st_mtim.tv_nsec;
@@ -40,12 +43,16 @@ int alpha_filecmp(t_fileinfo *a, t_fileinfo *b)
 	y = b->name;
 	if(ft_strcmp(y, ".") == 0)
 		return 1;
+
+#ifndef __APPLE__
 	while(*x && *y && ft_tolower(*x) == ft_tolower(*y))
 	{
 		++x;
 		++y;
 	}
 	return ft_tolower(*x) - ft_tolower(*y);
+#endif
+	return ft_strcmp(x, y);
 }
 
 int cmp_args(t_list *arg1, t_list *arg2, t_options *opts)

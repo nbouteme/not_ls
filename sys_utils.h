@@ -19,5 +19,6 @@ const char *user_from_id(uid_t uid);
 t_list *list_content(char *name);
 void sum_block_size(t_list *acc, const t_list *op);
 size_t block_count(t_fileinfo *file);
+char *set_cwdir(const char *n);
 
 #endif
