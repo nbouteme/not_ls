@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/09 15:39:05 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/12 11:24:09 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,10 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/stat.h>
+
+# ifdef __APPLE__
+#  define st_mtim st_mtimespec
+# endif
 
 typedef struct	s_options
 {

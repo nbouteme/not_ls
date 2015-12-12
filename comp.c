@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/09 15:39:05 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/12 11:23:49 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,6 @@ int type_diff(t_fileinfo *a, t_fileinfo *b)
 int time_diff(t_fileinfo *a, t_fileinfo *b)
 {
 	size_t diff;
-
 	diff = b->info.st_mtim.tv_sec - a->info.st_mtim.tv_sec;
 	if(!diff)
 		diff = b->info.st_mtim.tv_nsec - a->info.st_mtim.tv_nsec;
