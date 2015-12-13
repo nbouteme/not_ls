@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/13 12:15:51 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/13 13:33:51 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,6 +81,7 @@ t_list *read_file_info(t_list *file, void *sender)
 	opts = sender;// why did i need that ?
 	(void)opts;
 	fi = malloc(sizeof(*fi));
+	fi->fields = 0;
 	fi->name = ft_strdup(file->content);
 	fi->real_info = 0;
 	t = fi->name[0] != '/' ? ft_strjoin(set_cwdir(0), fi->name) : ft_strdup(fi->name);
