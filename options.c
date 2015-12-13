@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/12 17:31:53 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/13 12:15:51 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,7 +83,7 @@ t_list *read_file_info(t_list *file, void *sender)
 	fi = malloc(sizeof(*fi));
 	fi->name = ft_strdup(file->content);
 	fi->real_info = 0;
-	t = ft_strjoin(set_cwdir(0), fi->name);
+	t = fi->name[0] != '/' ? ft_strjoin(set_cwdir(0), fi->name) : ft_strdup(fi->name);
 	fi->e = lstat(t, &fi->info);
 	if(fi->e)
 		fi->e = errno;

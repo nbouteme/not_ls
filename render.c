@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/12 12:39:13 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/12 18:10:05 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/13 11:58:22 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,32 @@ char *perms2str(mode_t mode)
 
 int has_extended(t_fileinfo *f)
 {
-	return listxattr(f->name, 0, 0, XATTR_NOFOLLOW);
+	int n;
+	char *tmp;
+
+	tmp = ft_strjoin(set_cwdir(0), f->name);
+	n = listxattr(tmp, 0, 0, XATTR_NOFOLLOW) > 0;
+	free(tmp);
+	return n;
+}
+
+#include <sys/types.h>
+#include <sys/acl.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+
+int has_acl(t_fileinfo *f)
+{
+	char *tmp;
+	int fd;
+
+	tmp = ft_strjoin(set_cwdir(0), f->name);
+	fd = open(tmp, O_RDONLY);
+	acl_t acl = acl_get_fd(fd);
+	acl_free(acl);
+	free(tmp);
+	return !!acl;
 }
 
 char *render_perms(t_fileinfo *f)
@@ -53,7 +78,9 @@ char *render_perms(t_fileinfo *f)
 	char *ret;
 
 	s = perms2str(f->info.st_mode);
-	ret = ft_strjoin(s, has_extended(f) ? "@" : " ");
+	ret = ft_strjoin(s, " ");
+	ret[10] = has_acl(f) ? '+' : ' ';
+	ret[10] = has_extended(f) ? '@' : ret[10];
 	free(s);
 	return ret;
 }
@@ -257,6 +284,8 @@ void render_dir(t_fileinfo *elem, t_options *opts)
 		ft_lstiterup(dir_content, (void*)&bake_fields, opts);
 		print_dir(dir_content, opts);
 	}
+	set_cwdir(tmp);
+	free(tmp);
 }
 
 void render_list(t_list *elem, t_options *opts)

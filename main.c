@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/12 17:15:43 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/13 11:33:38 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,10 +35,14 @@ void sum_block_size(t_list *acc, const t_list *op)
 
 int main(int argc, char **argv)
 {
-	t_options *opts = get_opts(argc, argv);
+	t_options *opts;
+	t_list *list;
+
+	opts = get_opts(argc, argv);;
+	set_cwdir("./");
 	if (!opts->files)
 		add_file(opts, ".");
-	t_list *list = ft_lstmapup(opts->files, &read_file_info, opts);
+	list = ft_lstmapup(opts->files, &read_file_info, opts);
 	disp(list, opts);
 	if(list)
 		ft_lstdel(&list, &delete_fileinfo);

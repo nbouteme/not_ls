@@ -68,12 +68,14 @@ size_t get_total_blocks(t_list *file_list)
 char *set_cwdir(const char *n)
 {
 	static char *cwd = 0;
-	if (!cwd)
-		cwd = ft_strdup("./");
+	char *tmp;
+
 	if (n)
 	{
 		free(cwd);
-		cwd = ft_strjoin(ft_strdup(n), n[ft_strlen(n) - 1] == '/' ? "" : "/");
+		tmp = ft_strdup(n);
+		cwd = ft_strjoin(tmp, n[ft_strlen(n) - 1] == '/' ? "" : "/");
+		free(tmp);
 	}
 	return cwd;
 }
