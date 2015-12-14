@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/12 12:39:13 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/13 11:58:22 by nbouteme         ###   ########.fr       */
+/*   Updated: 2015/12/14 13:34:03 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,9 +96,23 @@ void print_mode_str(t_fileinfo *f)
 
 void print_fn(t_fileinfo *elem, t_options *opts)
 {
+	char *tmp;
+	char *ft;
 	// couleurs ici
 	ft_putstr(elem->name);
 	// couleurs ici
+
+	if(S_ISLNK(elem->info.st_mode))
+	{
+		tmp = ft_strnew(512);
+		ft_putstr(" -> ");
+		ft = ft_strjoin(set_cwdir(0), elem->name);
+		readlink(ft, tmp, 1024);
+		ft_putstr(tmp);
+		free(ft);
+		free(tmp);
+	}
+
 	if(opts->long_format)
 		ft_putchar(10);
 	else
@@ -126,8 +140,25 @@ void print_long(t_fileinfo *elem, t_options *opts)
 
 char *render_fn(t_fileinfo *elem, t_options *opts)
 {
+	char *t;
+	char *r;
+	char *tmp;
+	char *ft;
+
 	(void)opts;//add colors
-	return elem->name;
+	r = elem->name;
+	if(S_ISLNK(elem->info.st_mode))
+	{
+		t = ft_strjoin(r, " -> ");
+		tmp = ft_strnew(512);
+		ft = ft_strjoin(set_cwdir(0), elem->name);
+		readlink(ft, tmp, 1024);
+		r = ft_strjoin(t, tmp);
+		free(t);
+		free(ft);
+		free(tmp);
+	}
+	return r;
 }
 
 typedef struct	s_field
