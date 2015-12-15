@@ -12,6 +12,16 @@
 
 #include "render.h"
 
+#include <sys/types.h>
+#include <sys/acl.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/xattr.h>
+
+#ifndef __APPLE
+# include <acl/libacl.h>
+#endif
+
 char *perms2str(mode_t mode)
 {
 	const char *file_type = "-pc-d-b---l-s";
@@ -40,35 +50,42 @@ char *perms2str(mode_t mode)
 	return o;
 }
 
-#include <sys/xattr.h>
-
 int has_extended(t_fileinfo *f)
 {
 	int n;
 	char *tmp;
 
 	tmp = ft_strjoin(set_cwdir(0), f->name);
+#ifdef __APPLE
 	n = listxattr(tmp, 0, 0, XATTR_NOFOLLOW) > 0;
+# else
+	n = listxattr(tmp, 0, 0) > 0;
+#endif
 	free(tmp);
 	return n;
 }
-
-#include <sys/types.h>
-#include <sys/acl.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 
 int has_acl(t_fileinfo *f)
 {
 	char *tmp;
 	int fd;
-
+	acl_t acl;
+	
 	tmp = ft_strjoin(set_cwdir(0), f->name);
+#ifdef __APPLE
 	fd = open(tmp, O_RDONLY);
-	acl_t acl = acl_get_fd(fd);
+	acl = acl_get_fd(fd);
 	acl_free(acl);
+	close(fd);
+# else
+	fd = acl_extended_file(tmp);
+	fd = fd == -1 ? 0 : fd;
 	free(tmp);
+	return fd;
+#endif
+	free(tmp);
+
 	return !!acl;
 }
 
@@ -121,7 +138,6 @@ void print_fn(t_fileinfo *elem, t_options *opts)
 
 void print_long(t_fileinfo *elem, t_options *opts)
 {
-	(void)opts;
 	print_mode_str(elem);
 	ft_putchar(32);
 	ft_putnbr(elem->info.st_nlink);
@@ -146,7 +162,7 @@ char *render_fn(t_fileinfo *elem, t_options *opts)
 	char *ft;
 
 	(void)opts;//add colors
-	r = elem->name;
+	r = ft_strdup(elem->name);
 	if(S_ISLNK(elem->info.st_mode))
 	{
 		t = ft_strjoin(r, " -> ");
@@ -160,13 +176,6 @@ char *render_fn(t_fileinfo *elem, t_options *opts)
 	}
 	return r;
 }
-
-typedef struct	s_field
-{
-	char	*key;
-	char	*value;
-	int		width;
-}				t_field;
 
 void add_field(t_fileinfo *elem, const char *key, const char *value)
 {
@@ -197,17 +206,24 @@ void bake_fields(t_list *elem, t_options *opts)
 	t_fileinfo *file;
 	char *s;
 	file = elem->content;
-	add_field(file, "name", render_fn(file, opts));
+	add_field(file, "name", s = render_fn(file, opts));
+	free(s);
 	if(!opts->long_format)
 		return;
-	add_field(file, "perms", render_perms(file));
-	add_field(file, "hl", ft_itoa(file->info.st_nlink));
-	add_field(file, "user", ft_strjoin(user_from_id(file->info.st_uid), " "));
-	add_field(file, "group", ft_strjoin(group_from_id(file->info.st_gid), " "));
-	add_field(file, "size", ft_itoa(file->info.st_size));
+	add_field(file, "perms", s = render_perms(file));
+	free(s);
+	add_field(file, "hl", s = ft_itoa(file->info.st_nlink));
+	free(s);
+	add_field(file, "user", s = ft_strjoin(user_from_id(file->info.st_uid), " "));
+	free(s);
+	add_field(file, "group", s = ft_strjoin(group_from_id(file->info.st_gid), " "));
+	free(s);
+	add_field(file, "size", s = ft_itoa(file->info.st_size));
+	free(s);
 	s = ctime(&file->info.st_mtim.tv_sec);
 	s = ft_strsub(s, 4, ft_strlen(s) - 13);
 	add_field(file, "ctime", s);
+	free(s);
 }
 
 typedef struct	s_padargs
@@ -267,6 +283,28 @@ void simple_print(t_list *elem, t_padargs *args)
 	ft_putchar('\n');
 }
 
+void delete_field(void *elem, size_t size)
+{
+	t_field *f;
+
+	(void)size;
+	f = elem;
+	free(f->key);
+	free(f->value);
+	free(f);
+}
+
+void fileinfo_dtor(t_fileinfo *s)
+{
+	if(s->fields)
+		ft_lstdel(&s->fields, &delete_field);
+	if(s->name)
+		free(s->name);
+	if(s->real_info)
+		free(s->real_info);
+	free(s);
+}
+
 void print_dir(t_list *content, t_options *opts)
 {
 	t_fileinfo *f;
@@ -289,21 +327,31 @@ void print_dir(t_list *content, t_options *opts)
 		ft_lstiterup(content, (void*)&padded_print, &args);
 	else
 		ft_lstiterup(content, (void*)&simple_print, &args);
+	fileinfo_dtor(f);
+}
+
+int keep_dirs(t_list *elem)
+{
+	t_fileinfo *f = elem->content;
+	return S_ISDIR(f->info.st_mode);
 }
 
 void render_dir(t_fileinfo *elem, t_options *opts)
 {
 	t_list *dir_content;
+	t_list *rec_content;
 	char *tmp;
+	char *cat;
 	tmp = ft_strdup(set_cwdir(0));
-	set_cwdir(elem->name[0] == '/' ? elem->name :
-			  ft_strjoin(set_cwdir(0), elem->name));
+	cat = ft_strjoin(set_cwdir(0), elem->name);
+	set_cwdir(elem->name[0] == '/' ? elem->name : cat);
+	free(cat);
 	if(opts->argc > 1 || opts->recursive)
 	{
 		ft_putstr(elem->name);
-		ft_putchar(':');
+		ft_putstr(":\n");
 	}
-	dir_content = get_content(elem->name, opts);
+	dir_content = get_content(set_cwdir(0), opts);
 	if(dir_content)
 	{
 		if(opts->long_format)
@@ -315,6 +363,16 @@ void render_dir(t_fileinfo *elem, t_options *opts)
 		ft_lstiterup(dir_content, (void*)&bake_fields, opts);
 		print_dir(dir_content, opts);
 	}
+	if(opts->recursive)
+	{
+		rec_content = ft_lstfilter(dir_content, &keep_dirs);
+		if(rec_content)
+		{
+			ft_putchar(10);
+			disp(rec_content, opts);
+		}
+	}
+	ft_lstdel(&dir_content, &delete_fileinfo);
 	set_cwdir(tmp);
 	free(tmp);
 }

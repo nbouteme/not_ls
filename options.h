@@ -43,6 +43,13 @@ typedef struct	s_fileinfo
 	struct stat info;
 }				t_fileinfo;
 
+typedef struct	s_field
+{
+	char	*key;
+	char	*value;
+	int		width;
+}				t_field;
+
 t_list *read_file_info(t_list *file, void *sender);
 t_options *get_opts(int argc, char **argv);
 void add_file(t_options *opts, char *name);

@@ -14,5 +14,6 @@ void print_fn(t_fileinfo *elem, t_options *opts);
 void render_dir(t_fileinfo *elem, t_options *opts);
 void render_list(t_list *elem, t_options *opts);
 void print_long(t_fileinfo *elem, t_options *opts);
+void fileinfo_dtor(t_fileinfo *s);
 
 #endif

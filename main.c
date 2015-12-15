@@ -22,7 +22,11 @@
 
 size_t block_count(t_fileinfo *file)
 {
+#ifdef __APPLE__
 	return file->info.st_blocks;
+#else
+	return file->info.st_blocks >> 1;
+#endif
 }
 
 void sum_block_size(t_list *acc, const t_list *op)
@@ -49,4 +53,5 @@ int main(int argc, char **argv)
 	if(opts->files)
 		ft_lstdel(&opts->files, &delete_content);
 	free(opts);
+	free(set_cwdir(0));
 }

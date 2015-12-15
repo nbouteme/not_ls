@@ -25,7 +25,8 @@ t_list *list_content(char *name)
 	ret = 0;
 	dir = opendir(name);
 	while((r = readdir(dir)))
-		ft_lstadd(&ret, ft_lstnew(r->d_name, ft_strlen(r->d_name)));
+		ft_lstadd(&ret, ft_lstnew(r->d_name, ft_strlen(r->d_name) + 1));
+	closedir(dir);
 	return ret;
 }
 
@@ -47,6 +48,7 @@ t_list *get_content(char *name, t_options *opts)
 	}
 	else
 		ret = 0;
+	ft_lstdel(&tmp, &delete_content);
 	return ret;
 }
 
@@ -63,7 +65,6 @@ size_t get_total_blocks(t_list *file_list)
 	ft_lstdelone(&ret, &delete_content);
 	return n;
 }
-
 
 char *set_cwdir(const char *n)
 {

@@ -9,17 +9,9 @@ void delete_content(void *content, size_t size)
 
 void delete_fileinfo(void *content, size_t size)
 {
-	t_fileinfo *s;
-
 	(void)size;
-	if (!content)
-		return ;
-	s = content;
-	if(s->name)
-		free(s->name);
-	if(s->real_info)
-		free(s->real_info);
-	free(s);
+	if (content)
+		fileinfo_dtor(content);
 }
 
 void del_int(void* content, size_t content_size)
