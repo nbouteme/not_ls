@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/12 12:39:13 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/14 13:34:03 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/01/06 19:17:13 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,10 +17,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/xattr.h>
-
-#ifndef __APPLE
-# include <acl/libacl.h>
-#endif
 
 char *perms2str(mode_t mode)
 {
@@ -56,11 +52,7 @@ int has_extended(t_fileinfo *f)
 	char *tmp;
 
 	tmp = ft_strjoin(set_cwdir(0), f->name);
-#ifdef __APPLE
 	n = listxattr(tmp, 0, 0, XATTR_NOFOLLOW) > 0;
-# else
-	n = listxattr(tmp, 0, 0) > 0;
-#endif
 	free(tmp);
 	return n;
 }
@@ -71,9 +63,9 @@ int has_acl(t_fileinfo *f)
 	char *tmp;
 	int fd;
 	acl_t acl;
-	
+
 	tmp = ft_strjoin(set_cwdir(0), f->name);
-#ifdef __APPLE
+#ifdef __APPLE__
 	fd = open(tmp, O_RDONLY);
 	acl = acl_get_fd(fd);
 	acl_free(acl);

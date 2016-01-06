@@ -1,7 +1,7 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include <libft.h>
+#include <libft/std.h>
 #include <unistd.h>
 #include "options.h"
 #include "callback.h"

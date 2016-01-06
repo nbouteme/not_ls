@@ -1,7 +1,7 @@
 #ifndef SYS_UTILS_H
 #define SYS_UTILS_H
 
-#include <libft.h>
+#include <libft/std.h>
 #include <pwd.h>
 #include <grp.h>
 #include <time.h>
