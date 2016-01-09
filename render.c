@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/12 12:39:13 by nbouteme          #+#    #+#             */
-/*   Updated: 2016/01/06 19:17:13 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/01/09 22:50:10 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -328,21 +328,38 @@ int keep_dirs(t_list *elem)
 	return S_ISDIR(f->info.st_mode);
 }
 
+int should_print_name(t_fileinfo *elem, t_options *opts)
+{
+	t_list *l;
+
+	if(opts->argc > 1)
+		return 1;
+	l = opts->files;
+	while(l)
+	{
+		if(strcmp(elem->name, l->content) == 0)
+			return 0;
+		l = l->next;
+	}
+	return 1;
+}
+
 void render_dir(t_fileinfo *elem, t_options *opts)
 {
 	t_list *dir_content;
 	t_list *rec_content;
 	char *tmp;
 	char *cat;
+
 	tmp = ft_strdup(set_cwdir(0));
 	cat = ft_strjoin(set_cwdir(0), elem->name);
 	set_cwdir(elem->name[0] == '/' ? elem->name : cat);
-	free(cat);
-	if(opts->argc > 1 || opts->recursive)
+	if(should_print_name(elem, opts))
 	{
-		ft_putstr(elem->name);
+		ft_putstr(ft_strncmp(cat, "./", 2) == 0 ? cat + 2 : elem->name);
 		ft_putstr(":\n");
 	}
+	free(cat);
 	dir_content = get_content(set_cwdir(0), opts);
 	if(dir_content)
 	{
@@ -354,17 +371,11 @@ void render_dir(t_fileinfo *elem, t_options *opts)
 		}
 		ft_lstiterup(dir_content, (void*)&bake_fields, opts);
 		print_dir(dir_content, opts);
-	}
-	if(opts->recursive)
-	{
-		rec_content = ft_lstfilter(dir_content, &keep_dirs);
-		if(rec_content)
-		{
-			ft_putchar(10);
+		putchar(10);
+		if(opts->recursive && (rec_content = ft_lstfilter(dir_content, &keep_dirs)))
 			disp(rec_content, opts);
-		}
+		ft_lstdel(&dir_content, &delete_fileinfo);
 	}
-	ft_lstdel(&dir_content, &delete_fileinfo);
 	set_cwdir(tmp);
 	free(tmp);
 }
@@ -373,9 +384,11 @@ void render_list(t_list *elem, t_options *opts)
 {
 	t_fileinfo *obj;
 	const t_renderf rndr_type[] = { &error_handle, &print_gen_file,
-									&print_gen_file, 0, &render_dir,
-									0, &print_gen_file, 0, &print_gen_file, 0,
+									&print_gen_file, 0, &render_dir, 0,
+									&print_gen_file, 0, &print_gen_file, 0,
 									&print_gen_file, 0, &print_gen_file };
 	obj = elem->content;
 	rndr_type[(obj->info.st_mode & S_IFMT) >> 12](obj, opts);
+	if(elem->next)
+		putchar(10);
 }
