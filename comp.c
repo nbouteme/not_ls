@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/12 12:34:09 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/01/13 15:54:50 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,13 +66,13 @@ int cmp_args(t_list *arg1, t_list *arg2, t_options *opts)
 		diff = type_diff(a, b);
 		if(!diff)
 			diff = alpha_filecmp(a, b);
-		return opts->reverse ? -diff : diff;
+		return opts->flags['r'] ? -diff : diff;
 	}
-	if(opts->time_sort)
+	if(opts->flags['t'])
 		diff = time_diff(a, b);
 	else
 		diff = alpha_filecmp(a, b);
-	return opts->reverse ? -diff : diff;
+	return opts->flags['r'] ? -diff : diff;
 }
 
 int filecmp(const t_list *arg1, const t_list *arg2, t_options *opts)
@@ -81,9 +81,9 @@ int filecmp(const t_list *arg1, const t_list *arg2, t_options *opts)
 	t_fileinfo *b = arg2->content;
 	int diff;
 
-	if(opts->time_sort)
+	if(opts->flags['t'])
 		diff = time_diff(a, b);
 	else
 		diff = alpha_filecmp(a, b);
-	return opts->reverse ? -diff : diff;
+	return opts->flags['r'] ? -diff : diff;
 }

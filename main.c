@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2016/01/09 22:20:25 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/01/19 19:19:50 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,6 @@ int main(int argc, char **argv)
 
 	opts = get_opts(argc, argv);
 	set_cwdir(".");
-	//set_cwdir("");
 	if (!opts->files)
 		add_file(opts, ".");
 	list = ft_lstmapup(opts->files, &read_file_info, opts);
@@ -53,6 +52,7 @@ int main(int argc, char **argv)
 		ft_lstdel(&list, &delete_fileinfo);
 	if(opts->files)
 		ft_lstdel(&opts->files, &delete_content);
+	free(opts->flags);
 	free(opts);
 	free(set_cwdir(0));
 }

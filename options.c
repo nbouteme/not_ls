@@ -6,12 +6,20 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/13 13:33:51 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/01/13 16:10:22 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "options.h"
 # include "sys_utils.h"
+
+void exit_somehow_properly(char opts)
+{
+	ft_putstr_fd("ls: illegal option -- ", 2);
+	ft_putchar_fd(opts, 2);
+	ft_putendl_fd("\nusage: ls [-alrRt] [file ...]", 2);
+	exit(1);
+}
 
 void parse_flag(t_options *opts, char *opt, int *stop)
 {
@@ -26,13 +34,10 @@ void parse_flag(t_options *opts, char *opt, int *stop)
 	}
 	i = -1;
 	while (++i < l)
-	{
-		opts->long_format |= opt[i] == 'l';
-		opts->recursive |= opt[i] == 'R';
-		opts->hidden |= opt[i] == 'a';
-		opts->reverse |= opt[i] == 'r';
-		opts->time_sort |= opt[i] == 't';
-	}
+		if (ft_strindexof("larRt", opt[i]) != -1)
+			opts->flags[(unsigned)opt[i]] = 1;
+		else
+			exit_somehow_properly(opt[i]);
 }
 
 void add_file(t_options *opts, char *name)
@@ -55,6 +60,7 @@ t_options *get_opts(int argc, char **argv)
 
 	ret = malloc(sizeof(t_options));
 	ft_bzero(ret, sizeof(t_options));
+	ret->flags = ft_memalloc('z' + 1);
 	flag_parse = 1;
 	i = 0;
 	while (++i < argc)

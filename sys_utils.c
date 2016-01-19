@@ -38,17 +38,15 @@ t_list *get_content(char *name, t_options *opts)
 	t_list *tmp;
 
 	content = list_content(name);
-
-	tmp = ft_lstfilterup(content, (void*)&keep_things, opts);
-	if (tmp)
+	if ((tmp = ft_lstfilterup(content, (void*)&keep_things, opts)))
 	{
 		ret = ft_lstmapup(tmp, &read_file_info, opts);
 		ft_lstdel(&content, &delete_content);
 		ft_lstsortup(&ret, (void*)&filecmp, opts);
+		ft_lstdel(&tmp, &delete_content);
 	}
 	else
 		ret = 0;
-	ft_lstdel(&tmp, &delete_content);
 	return ret;
 }
 

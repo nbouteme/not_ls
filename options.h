@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2015/12/12 17:31:48 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/01/13 15:50:37 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,11 +27,7 @@ typedef struct	s_options
 {
 	t_list *files;
 	size_t argc;
-	int long_format : 1;
-	int recursive : 1;
-	int hidden : 1;
-	int reverse : 1;
-	int time_sort : 1;
+	unsigned char *flags;
 }				t_options; // remplacer bitfields par pointeur structure d'arguments
 
 typedef struct	s_fileinfo

@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/12 12:39:13 by nbouteme          #+#    #+#             */
-/*   Updated: 2016/01/09 22:50:10 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/01/19 21:09:51 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,20 +61,15 @@ int has_extended(t_fileinfo *f)
 int has_acl(t_fileinfo *f)
 {
 	char *tmp;
-	int fd;
 	acl_t acl;
 
 	tmp = ft_strjoin(set_cwdir(0), f->name);
 #ifdef __APPLE__
-	fd = open(tmp, O_RDONLY);
-	acl = acl_get_fd(fd);
+	acl = acl_get_link_np(tmp, ACL_TYPE_ACCESS);
 	acl_free(acl);
-	close(fd);
 # else
-	fd = acl_extended_file(tmp);
-	fd = fd == -1 ? 0 : fd;
-	free(tmp);
-	return fd;
+	acl = acl_extended_file(tmp);
+	acl = acl == (void*)-1 ? 0 : acl;
 #endif
 	free(tmp);
 
@@ -114,18 +109,29 @@ void print_fn(t_fileinfo *elem, t_options *opts)
 	if(S_ISLNK(elem->info.st_mode))
 	{
 		tmp = ft_strnew(512);
-		ft_putstr(" -> ");
+		if(opts->flags['l'])
+			ft_putstr(" -> ");
 		ft = ft_strjoin(set_cwdir(0), elem->name);
 		readlink(ft, tmp, 1024);
 		ft_putstr(tmp);
 		free(ft);
 		free(tmp);
 	}
-
-	if(opts->long_format)
-		ft_putchar(10);
+	if(opts->flags['l'])
+		ft_putstr("\n");
 	else
 		ft_putchar('\t');
+}
+
+char *my_ctime(const time_t *clock)
+{
+	char *s;
+
+	s = ctime(clock);
+#ifdef __APPLE__
+	s = ft_strdup(s);
+#endif
+	return (s);
 }
 
 void print_long(t_fileinfo *elem, t_options *opts)
@@ -140,7 +146,7 @@ void print_long(t_fileinfo *elem, t_options *opts)
 	ft_putchar(32);
 	ft_putnbr(elem->info.st_size);
 	ft_putchar(32);
-	char *s = ctime(&elem->info.st_mtim.tv_sec);
+	char *s = my_ctime(&elem->info.st_mtim.tv_sec);
 	write(1, s, ft_strlen(s) - 1);
 	ft_putchar(32);
 	print_fn(elem, opts);
@@ -155,7 +161,7 @@ char *render_fn(t_fileinfo *elem, t_options *opts)
 
 	(void)opts;//add colors
 	r = ft_strdup(elem->name);
-	if(S_ISLNK(elem->info.st_mode))
+	if(S_ISLNK(elem->info.st_mode) && opts->flags['l'])
 	{
 		t = ft_strjoin(r, " -> ");
 		tmp = ft_strnew(512);
@@ -197,10 +203,11 @@ void bake_fields(t_list *elem, t_options *opts)
 {
 	t_fileinfo *file;
 	char *s;
+	char *r;
 	file = elem->content;
 	add_field(file, "name", s = render_fn(file, opts));
 	free(s);
-	if(!opts->long_format)
+	if(!opts->flags['l'])
 		return;
 	add_field(file, "perms", s = render_perms(file));
 	free(s);
@@ -210,10 +217,22 @@ void bake_fields(t_list *elem, t_options *opts)
 	free(s);
 	add_field(file, "group", s = ft_strjoin(group_from_id(file->info.st_gid), " "));
 	free(s);
-	add_field(file, "size", s = ft_itoa(file->info.st_size));
+	if (S_ISCHR(file->info.st_mode) || S_ISBLK(file->info.st_mode))
+	{
+		s = ft_strcat(ft_itoa(major(file->info.st_rdev)), ",");
+		ft_memmove(s + 1, s, ft_strlen(s) + 1);
+		s[0] = ' ';
+		add_field(file, "major", s);
+		free(s);
+		add_field(file, "size", s = ft_itoa(minor(file->info.st_rdev)));
+	}
+	else
+		add_field(file, "size", s = ft_itoa(file->info.st_size));
 	free(s);
-	s = ctime(&file->info.st_mtim.tv_sec);
+	s = my_ctime(&file->info.st_mtim.tv_sec);
+	r = s;
 	s = ft_strsub(s, 4, ft_strlen(s) - 13);
+	free(r);
 	add_field(file, "ctime", s);
 	free(s);
 }
@@ -243,26 +262,32 @@ void calc_pads(t_list *elem, t_padargs *args)
 void padded_print(t_list *elem, t_padargs *args)
 {
 	const char *field[] = { "perms", "hl", "user", "group",
-							"size", "ctime", "name" };
-	const int pad[] = { 0, 1, 0, 0, 1, 0, 0 };
+							"major", "size", "ctime", "name" };
+	const int pad[] = { 0, 1, 0, 0, 1, 1, 0, 0 };
 	int i;
 	int n;
-
+	t_field *f;
+	t_field *g;
 	i = -1;
-	while (++i < 7)
+	while (++i < 8)
 	{
-		n = get_field(args->pads, field[i])->width - get_field(((t_fileinfo *)elem->content), field[i])->width;
+		f = get_field(((t_fileinfo *)elem->content), field[i]);
+		n = f ? f->width : 0;
+		g = get_field(args->pads, field[i]);
+		if(!g && !f)
+			continue;
+		n = (g ? 0 : g->width) - n;
 		if(pad[i])
-			while(n--)
+			while(n-- > 0)
 				ft_putchar(' ');
-		ft_putstr(get_field(((t_fileinfo *)elem->content), field[i])->value);
+		ft_putstr(f ? f->value : "");
 		if(ft_strcmp("name", field[i]) == 0)
 		{
-			ft_putchar(10);
+			ft_putstr("\n");
 			break ;
 		}
 		else if (!pad[i])
-			while(n--)
+			while(n-- > 0)
 				ft_putchar(' ');
 		ft_putchar(' ');
 	}
@@ -272,7 +297,7 @@ void simple_print(t_list *elem, t_padargs *args)
 {
 	(void) args;
 	ft_putstr(get_field(((t_fileinfo *)elem->content), "name")->value);
-	ft_putchar('\n');
+	ft_putstr("\n");
 }
 
 void delete_field(void *elem, size_t size)
@@ -297,6 +322,22 @@ void fileinfo_dtor(t_fileinfo *s)
 	free(s);
 }
 
+int one_of_is_blk(t_list *files)
+{
+	t_list *l;
+	t_fileinfo *fi;
+
+	l = files;
+	while(l)
+	{
+		fi = l->content;
+		if(fi->info.st_mode & S_IFCHR)
+			return 1;
+		l = l->next;
+	}
+	return 0;
+}
+
 void print_dir(t_list *content, t_options *opts)
 {
 	t_fileinfo *f;
@@ -304,18 +345,20 @@ void print_dir(t_list *content, t_options *opts)
 
 	f = ft_memalloc(sizeof(*f));
 	add_field(f, "name", "");
-	if(opts->long_format)
+	if (opts->flags['l'])
 	{
 		add_field(f, "perms", "");
 		add_field(f, "hl", "");
 		add_field(f, "user", "");
 		add_field(f, "group", "");
+		if (one_of_is_blk(content))
+			add_field(f, "major", "");
 		add_field(f, "size", "");
 		add_field(f, "ctime", "");
 	}
 	args = (t_padargs){f, opts};
 	ft_lstiterup(content, (void*)&calc_pads, &args);
-	if(opts->long_format)
+	if (opts->flags['l'])
 		ft_lstiterup(content, (void*)&padded_print, &args);
 	else
 		ft_lstiterup(content, (void*)&simple_print, &args);
@@ -344,7 +387,9 @@ int should_print_name(t_fileinfo *elem, t_options *opts)
 	return 1;
 }
 
-void render_dir(t_fileinfo *elem, t_options *opts)
+int g_first = 1;
+
+void render_dir(t_fileinfo *elem, t_options *opts, int first)
 {
 	t_list *dir_content;
 	t_list *rec_content;
@@ -356,26 +401,29 @@ void render_dir(t_fileinfo *elem, t_options *opts)
 	set_cwdir(elem->name[0] == '/' ? elem->name : cat);
 	if(should_print_name(elem, opts))
 	{
+		if(!g_first)
+			ft_putstr("\n");
 		ft_putstr(ft_strncmp(cat, "./", 2) == 0 ? cat + 2 : elem->name);
 		ft_putstr(":\n");
 	}
+	if(g_first) g_first = 0;
 	free(cat);
 	dir_content = get_content(set_cwdir(0), opts);
 	if(dir_content)
 	{
-		if(opts->long_format)
+		if(opts->flags['l'])
 		{
 			ft_putstr("total ");
 			ft_putnbr(get_total_blocks(dir_content));
-			ft_putchar(10);
+			ft_putstr("\n");
 		}
 		ft_lstiterup(dir_content, (void*)&bake_fields, opts);
 		print_dir(dir_content, opts);
-		putchar(10);
-		if(opts->recursive && (rec_content = ft_lstfilter(dir_content, &keep_dirs)))
+		if(opts->flags['R'] && (rec_content = ft_lstfilter(dir_content, &keep_dirs)))
 			disp(rec_content, opts);
 		ft_lstdel(&dir_content, &delete_fileinfo);
 	}
+	(void)first;
 	set_cwdir(tmp);
 	free(tmp);
 }
@@ -388,7 +436,5 @@ void render_list(t_list *elem, t_options *opts)
 									&print_gen_file, 0, &print_gen_file, 0,
 									&print_gen_file, 0, &print_gen_file };
 	obj = elem->content;
-	rndr_type[(obj->info.st_mode & S_IFMT) >> 12](obj, opts);
-	if(elem->next)
-		putchar(10);
+	rndr_type[(obj->info.st_mode & S_IFMT) >> 12](obj, opts, !elem->next);
 }
