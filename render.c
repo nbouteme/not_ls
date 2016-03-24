@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/12 12:39:13 by nbouteme          #+#    #+#             */
-/*   Updated: 2016/03/24 09:31:44 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/03/24 10:15:21 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ int		should_print_name(t_fileinfo *elem, t_options *opts)
 	l = opts->files;
 	while (l)
 	{
-		if (strcmp(elem->name, l->content) == 0)
+		if (ft_strcmp(elem->name, l->content) == 0)
 			return (0);
 		l = l->next;
 	}
