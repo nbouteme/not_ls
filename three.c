@@ -6,7 +6,7 @@
 /*   By: nbouteme <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/03/24 09:28:52 by nbouteme          #+#    #+#             */
-/*   Updated: 2016/03/24 09:29:03 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/03/24 09:37:27 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@ void	bake_fields(t_list *elem, t_options *opts)
 	}
 	else
 		add_field(file, "size", s = ft_itoa(file->info.st_size));
-	s = my_ctime(&file->info.st_mtim.tv_sec);
+	s = my_ctime(&file->info.st_mtimespec.tv_sec);
 	add_field(file, "ctime", s);
 }
 

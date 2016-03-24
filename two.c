@@ -6,7 +6,7 @@
 /*   By: nbouteme <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/03/24 09:28:27 by nbouteme          #+#    #+#             */
-/*   Updated: 2016/03/24 09:29:04 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/03/24 09:37:54 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,7 +69,7 @@ void	print_long(t_fileinfo *elem, t_options *opts)
 	ft_putchar(32);
 	ft_putnbr(elem->info.st_size);
 	ft_putchar(32);
-	s = my_ctime(&elem->info.st_mtim.tv_sec);
+	s = my_ctime(&elem->info.st_mtimespec.tv_sec);
 	write(1, s, ft_strlen(s));
 	ft_putchar(32);
 	print_fn(elem, opts);
