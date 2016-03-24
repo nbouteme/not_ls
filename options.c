@@ -6,7 +6,7 @@
 /*   By: nbouteme <nbouteme@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2015/12/08 12:56:14 by nbouteme          #+#    #+#             */
-/*   Updated: 2016/03/24 08:36:05 by nbouteme         ###   ########.fr       */
+/*   Updated: 2016/03/24 10:13:05 by nbouteme         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,18 +57,18 @@ t_options	*get_opts(int argc, char **argv)
 	i = 0;
 	while (++i < argc)
 	{
-		if (argv[i][0] != '-')
-			flag_parse = 0;
+		flag_parse &= argv[i][0] == '-';
 		if (flag_parse)
 		{
 			parse_flag(ret, argv[i] + 1, &flag_parse);
-			if (ft_strcmp(argv[i], "-"))
-				continue ;
-			flag_parse = 0;
-			--i;
+			if (ft_strcmp(argv[i], "-") == 0)
+				flag_parse = --i * 0;
 		}
-		add_file(ret, argv[i]);
-		ret->argc++;
+		else
+		{
+			add_file(ret, argv[i]);
+			ret->argc++;
+		}
 	}
 	return (ret);
 }
